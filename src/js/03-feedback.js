@@ -1,36 +1,45 @@
 import throttle from 'lodash.throttle';
 
-const form = document.querySelector('.feedback-form');
-const email = document.querySelector('input[name="email"]');
-const message = document.querySelector('textarea[name="message"]');
-const LOCALSTORAGE_KEY = 'feedback-form-state';
-
-form.addEventListener(
-  'input',
-  throttle(e => {
-    const objectToSave = { email: email.value, message: message.value };
-    localStorage.setItem(LOCALSTORAGE_KEY, JSON.stringify(objectToSave));
-  }, 500)
-);
-
-form.addEventListener('submit', e => {
-  e.preventDefault();
-  // console.log({ email: email.value, message: message.value });
-  form.reset();
-  localStorage.removeItem(LOCALSTORAGE_KEY);
-});
-
-const load = key => {
-  try {
-    const serializedState = localStorage.getItem(key);
-    return serializedState === null ? undefined : JSON.parse(serializedState);
-  } catch (error) {
-    // console.error('Get state error: ', error.message);
-  }
+const refs = {
+  form: document.querySelector('.feedback-form'),
+  submit: document.querySelector('button'),
+  input: document.querySelector('input'),
+  textarea: document.querySelector('textarea'),
 };
+let formData = {};
+const STORAGE_KEY = 'feedback-form-state';
 
-const storageData = load(LOCALSTORAGE_KEY);
-if (storageData) {
-  email.value = storageData.email;
-  message.value = storageData.message;
+refs.form.addEventListener('input', throttle(onFormInput, 1000));
+refs.form.addEventListener('submit', onFormSubmit);
+
+populateInput();
+
+function populateInput() {
+  if (localStorage[STORAGE_KEY]) {
+    const savedData = localStorage.getItem(STORAGE_KEY);
+    const parsedData = JSON.parse(savedData);
+
+    if (parsedData.email) {
+      refs.input.value = parsedData.email;
+    }
+
+    if (parsedData.message) {
+      refs.textarea.value = parsedData.message;
+    }
+  }
+}
+
+function onFormInput(e) {
+  formData[e.target.name] = e.target.value;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
+}
+
+function onFormSubmit(e) {
+  e.preventDefault();
+  formData.email = e.currentTarget.elements.email.value;
+  formData.message = e.currentTarget.elements.message.value;
+  console.log(formData);
+  e.currentTarget.reset();
+  localStorage.removeItem(STORAGE_KEY);
+  formData = {};
 }
